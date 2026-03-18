@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../lib/axios';
+import { getApiErrorMessage } from '../lib/api-errors';
 import toast from 'react-hot-toast';
 import { Plus, Trash2, CheckCircle, Circle, Loader2, Pencil, X, Save } from 'lucide-react';
 
@@ -34,8 +35,8 @@ const Dashboard = () => {
     try {
       const { data } = await api.get('/tasks');
       setTasks(data);
-    } catch (error: any) {
-      toast.error('Failed to load tasks');
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Failed to load tasks'));
     } finally {
       setLoading(false);
     }
@@ -52,7 +53,7 @@ const Dashboard = () => {
       setDescription('');
       toast.success('Task created');
     } catch (error) {
-      toast.error('Failed to create task');
+      toast.error(getApiErrorMessage(error, 'Failed to create task'));
     } finally {
       setCreating(false);
     }
@@ -63,7 +64,7 @@ const Dashboard = () => {
       const { data } = await api.put(`/tasks/${task.id}`, { ...task, isCompleted: !task.isCompleted });
       setTasks(tasks.map((t) => (t.id === task.id ? data : t)));
     } catch (error) {
-      toast.error('Failed to update task');
+      toast.error(getApiErrorMessage(error, 'Failed to update task'));
     }
   };
 
@@ -87,7 +88,7 @@ const Dashboard = () => {
       toast.success('Task updated');
       cancelEdit();
     } catch (error) {
-      toast.error('Failed to update task');
+      toast.error(getApiErrorMessage(error, 'Failed to update task'));
     }
   };
 
@@ -98,7 +99,7 @@ const Dashboard = () => {
       setTasks(tasks.filter((t) => t.id !== id));
       toast.success('Task deleted');
     } catch (error) {
-      toast.error('Failed to delete task');
+      toast.error(getApiErrorMessage(error, 'Failed to delete task'));
     }
   };
 

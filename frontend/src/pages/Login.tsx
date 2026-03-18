@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../lib/axios';
+import { getApiErrorMessage } from '../lib/api-errors';
 import toast from 'react-hot-toast';
 import { Mail, Lock, ArrowRight } from 'lucide-react';
 
@@ -18,8 +19,8 @@ const Login = () => {
       login(response.data.token, response.data.user);
       toast.success('Successfully logged in!');
       navigate('/dashboard');
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Login failed');
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Login failed'));
     }
   };
 

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../lib/axios';
+import { getApiErrorMessage, getValidationMessages } from '../lib/api-errors';
 import toast from 'react-hot-toast';
 import { User, Mail, Lock, ArrowRight } from 'lucide-react';
 
@@ -19,11 +20,13 @@ const Register = () => {
       login(response.data.token, response.data.user);
       toast.success('Account created successfully!');
       navigate('/dashboard');
-    } catch (error: any) {
-      if (error.response?.data?.errors) {
-        error.response.data.errors.forEach((err: any) => toast.error(`Validation: ${err.message}`));
+    } catch (error) {
+      const validationMessages = getValidationMessages(error);
+
+      if (validationMessages.length > 0) {
+        validationMessages.forEach((message) => toast.error(`Validation: ${message}`));
       } else {
-        toast.error(error.response?.data?.message || 'Registration failed');
+        toast.error(getApiErrorMessage(error, 'Registration failed'));
       }
     }
   };

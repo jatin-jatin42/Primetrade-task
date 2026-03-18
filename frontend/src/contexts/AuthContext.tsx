@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { jwtDecode } from 'jwt-decode';
 
 export interface User {
@@ -18,30 +18,50 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+interface DecodedToken {
+  exp: number;
+}
 
-  useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
+const getInitialAuthState = (): { token: string | null; user: User | null } => {
+  const storedToken = localStorage.getItem('token');
+  const storedUser = localStorage.getItem('user');
 
-    if (storedToken && storedUser) {
-      try {
-        const decoded: any = jwtDecode(storedToken);
-        if (decoded.exp * 1000 < Date.now()) {
-          logout();
-        } else {
-          setToken(storedToken);
-          setUser(JSON.parse(storedUser));
-        }
-      } catch (err) {
-        logout();
-      }
+  if (!storedToken || !storedUser) {
+    return { token: null, user: null };
+  }
+
+  try {
+    const decoded = jwtDecode<DecodedToken>(storedToken);
+
+    if (decoded.exp * 1000 < Date.now()) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      return { token: null, user: null };
     }
-    setIsLoading(false);
-  }, []);
+
+    return {
+      token: storedToken,
+      user: JSON.parse(storedUser) as User,
+    };
+  } catch {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    return { token: null, user: null };
+  }
+};
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const initialAuthState = getInitialAuthState();
+  const [user, setUser] = useState<User | null>(initialAuthState.user);
+  const [token, setToken] = useState<string | null>(initialAuthState.token);
+  const isLoading = false;
+
+  const clearAuth = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setToken(null);
+    setUser(null);
+  };
 
   const login = (newToken: string, newUser: User) => {
     localStorage.setItem('token', newToken);
@@ -51,10 +71,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setToken(null);
-    setUser(null);
+    clearAuth();
   };
 
   return (

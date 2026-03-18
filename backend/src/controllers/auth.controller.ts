@@ -7,10 +7,14 @@ import { signToken } from '../utils/jwt';
 import { z } from 'zod';
 
 const registerSchema = z.object({
-  name: z.string().min(2),
-  email: z.string().email(),
-  password: z.string().min(6),
-  role: z.enum(['user', 'admin']).optional(),
+  name: z.string().trim().min(2).max(255),
+  email: z.string().trim().email().transform((email) => email.toLowerCase()),
+  password: z.string().min(6).max(128),
+});
+
+const loginSchema = z.object({
+  email: z.string().trim().email().transform((email) => email.toLowerCase()),
+  password: z.string().min(1).max(128),
 });
 
 export const register = async (req: Request, res: Response): Promise<any> => {
@@ -29,15 +33,15 @@ export const register = async (req: Request, res: Response): Promise<any> => {
       name: parsedData.name,
       email: parsedData.email,
       password: hashedPassword,
-      role: parsedData.role || 'user',
+      role: 'user',
     }).returning({ id: users.id, name: users.name, email: users.email, role: users.role });
 
     const token = signToken({ id: newUser[0].id, role: newUser[0].role });
 
     res.status(201).json({ message: 'User registered successfully', user: newUser[0], token });
-  } catch (error: any) {
+  } catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ message: 'Validation Error', errors: error.errors });
+      return res.status(400).json({ message: 'Validation Error', errors: error.issues });
     }
     res.status(500).json({ message: 'Internal Server Error' });
   }
@@ -45,20 +49,16 @@ export const register = async (req: Request, res: Response): Promise<any> => {
 
 export const login = async (req: Request, res: Response): Promise<any> => {
   try {
-    const { email, password } = req.body;
+    const parsedData = loginSchema.parse(req.body);
 
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
-    }
-
-    const userRecord = await db.select().from(users).where(eq(users.email, email));
+    const userRecord = await db.select().from(users).where(eq(users.email, parsedData.email));
 
     if (userRecord.length === 0) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
     const user = userRecord[0];
-    const isMatch = await comparePassword(password, user.password);
+    const isMatch = await comparePassword(parsedData.password, user.password);
 
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid email or password' });
@@ -68,6 +68,9 @@ export const login = async (req: Request, res: Response): Promise<any> => {
 
     res.status(200).json({ message: 'Login successful', user: { id: user.id, name: user.name, email: user.email, role: user.role }, token });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ message: 'Validation Error', errors: error.issues });
+    }
     res.status(500).json({ message: 'Internal Server Error' });
   }
 };

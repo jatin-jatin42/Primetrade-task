@@ -6,6 +6,7 @@ A scalable REST API with JWT Authentication, Role-Based Access Control, and full
 - **Backend**: Node.js, Express, TypeScript, Drizzle ORM, PostgreSQL (Docker)
 - **Frontend**: React, Vite, TailwindCSS
 - **Security & Validation**: JWT Auth, Bcrypt Hashing, Zod schema validation
+- **API Testing**: Postman collection included in [`docs/Primetrade-Task-API.postman_collection.json`](./docs/Primetrade-Task-API.postman_collection.json)
 
 ## Scalability Note
 To scale this application for production use cases with higher traffic:
@@ -32,17 +33,34 @@ docker compose up -d
 cd backend
 npm install
 
+# Create backend env file from the sample
+cp .env.example .env
+
 # Push Drizzle schema to PostgreSQL
 npm run db:push
+
+# Seed the default admin user
+npm run db:seed
+
+# Optional: compile the backend
+npm run build
 
 # Start the dev server
 npm run dev
 ```
 
+Default admin credentials after seeding:
+
+- `admin@primetrade.ai`
+- `admin123`
+
 ### 3. Frontend Setup
 ```sh
 cd frontend
 npm install
+
+# Create frontend env file from the sample
+cp .env.example .env
 
 # Start the frontend dev server
 npm run dev
@@ -51,8 +69,11 @@ npm run dev
 ## API Documentation
 The REST API is organized logically under `/api/v1/auth` and `/api/v1/tasks`.
 
+- Postman collection: `docs/Primetrade-Task-API.postman_collection.json`
+- Base URL variable: `{{baseUrl}} = http://localhost:5001/api/v1`
+
 ### Auth Endpoints
-- `POST /api/v1/auth/register`: `{ name, email, password, role }`
+- `POST /api/v1/auth/register`: `{ name, email, password }`
 - `POST /api/v1/auth/login`: `{ email, password }`
 
 ### Tasks Endpoints (Requires `Authorization: Bearer <token>`)
@@ -61,3 +82,9 @@ The REST API is organized logically under `/api/v1/auth` and `/api/v1/tasks`.
 - `GET /api/v1/tasks/:id`: Get a specific task
 - `PUT /api/v1/tasks/:id`: Update a task ` { title, description, isCompleted }`
 - `DELETE /api/v1/tasks/:id`: Delete a task
+
+## Security Notes
+- Public registration always creates a `user` role account.
+- Admin access is provided through the seeded admin user.
+- JWT secrets must be configured through `backend/.env`; the API will not start without `JWT_SECRET`.
+- Request payloads are validated with Zod for auth and task endpoints.
