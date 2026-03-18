@@ -3,6 +3,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import * as dotenv from 'dotenv';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './swagger';
 import authRoutes from './routes/auth.routes';
 import tasksRoutes from './routes/tasks.routes';
 
@@ -17,6 +19,10 @@ app.use(morgan('dev'));
 
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/tasks', tasksRoutes);
+app.use('/api/v1/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customSiteTitle: 'Primetrade Task API Docs',
+  swaggerOptions: { persistAuthorization: true },
+}));
 
 app.get('/api/v1/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'API is running' });
